@@ -155,17 +155,21 @@ btnExpand.addEventListener('click', () => {
   }
 });
 
-// Real Fireworks API Generation
+// Real Fireworks API Generation via Streaming
 async function generateFromFireworks(promptText) {
   const apiKey = localStorage.getItem('fireworks_api_key');
   const systemPrompt = localStorage.getItem('system_prompt');
+  const selectedModel = document.getElementById('model-select').value;
+  const metricsUI = document.getElementById('amd-metrics');
   
   if (!apiKey) {
     showToast('No API Key found. Using mock preview.');
     return null;
   }
 
-  showToast('Generating UI with Fireworks AI...');
+  showToast(`Starting inference on ${selectedModel.split('/').pop()}...`);
+  metricsUI.classList.add('active');
+  metricsUI.innerHTML = `<i class="fi fi-rr-dashboard"></i> AMD GPU: Initializing...`;
   
   try {
     const response = await fetch('https://api.fireworks.ai/inference/v1/chat/completions', {
@@ -175,7 +179,8 @@ async function generateFromFireworks(promptText) {
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: 'accounts/fireworks/models/llama-v3-70b-instruct',
+        model: selectedModel,
+        stream: true,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: promptText }
@@ -186,11 +191,48 @@ async function generateFromFireworks(promptText) {
     });
 
     if (!response.ok) throw new Error(`API Error: ${response.status}`);
-    const data = await response.json();
-    return data.choices[0].message.content;
+    
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let fullCode = "";
+    let startTime = performance.now();
+    let firstTokenTime = null;
+    let tokenCount = 0;
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      
+      if (!firstTokenTime) firstTokenTime = performance.now() - startTime;
+      
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split('\\n');
+      
+      for (const line of lines) {
+        if (line.startsWith('data: ') && !line.includes('[DONE]')) {
+          try {
+            const data = JSON.parse(line.slice(6));
+            const token = data.choices[0].delta.content || '';
+            fullCode += token;
+            tokenCount++;
+            
+            // Update Speedometer UI
+            const elapsed = (performance.now() - startTime) / 1000;
+            const speed = Math.round(tokenCount / elapsed);
+            metricsUI.innerHTML = `<i class="fi fi-rr-dashboard"></i> AMD GPU: ${speed} t/s | TTFT: ${Math.round(firstTokenTime)}ms`;
+            
+          } catch (e) {}
+        }
+      }
+    }
+    
+    metricsUI.classList.remove('active');
+    return fullCode;
   } catch (error) {
     console.error(error);
     showToast('Failed to generate code from API.');
+    metricsUI.classList.remove('active');
+    metricsUI.innerHTML = `<i class="fi fi-rr-dashboard"></i> AMD GPU: Error`;
     return null;
   }
 }
