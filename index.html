@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- Premium Fonts: Outfit & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- Flaticon Uicons -->
+    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/uicons-regular-rounded/css/uicons-regular-rounded.css'>
+    
+    <title>Lumina - AI App Builder</title>
+  </head>
+  <body>
+    <!-- Animated background layers -->
+    <div class="bg-animated"></div>
+    <div class="bg-texture"></div>
+
+    <div class="app-container">
+      <nav class="navbar glass-panel">
+        <div class="logo">
+          <i class="fi fi-rr-magic-wand logo-icon"></i>
+          <span>Lumina</span>
+        </div>
+        <div class="nav-actions">
+          <button class="btn btn-icon" id="btn-settings"><i class="fi fi-rr-settings"></i></button>
+          <button class="btn btn-primary" id="btn-deploy">
+            <i class="fi fi-rr-rocket"></i> Deploy
+          </button>
+        </div>
+      </nav>
+      
+      <main class="workspace">
+        <!-- Chat Panel -->
+        <section class="panel chat-panel glass-panel">
+          <div class="panel-header">
+            <div class="panel-title"><i class="fi fi-rr-comment-alt"></i> AI Assistant</div>
+          </div>
+          <div class="chat-history" id="chat-history">
+            <div class="message ai-message">
+              <div class="avatar"><i class="fi fi-rr-magic-wand"></i></div>
+              <div class="message-content">Hello! I'm Lumina. Let's design something incredible today. Describe what you'd like to build.</div>
+            </div>
+          </div>
+          <div class="chat-input-container">
+            <div class="input-wrapper">
+              <textarea id="prompt-input" placeholder="e.g. Create a sleek dark-mode pricing table..." rows="2"></textarea>
+              <button id="send-btn" class="btn-send"><i class="fi fi-rr-paper-plane"></i></button>
+            </div>
+            <div class="input-footer">
+              <span>Powered by Fireworks AI on AMD</span>
+              <span>Tokens: 0 / 8k</span>
+            </div>
+          </div>
+        </section>
+        
+        <!-- Preview Panel -->
+        <section class="panel preview-panel glass-panel">
+          <div class="preview-header">
+            <div class="tabs">
+              <button class="tab active" data-target="preview"><i class="fi fi-rr-eye"></i> Preview</button>
+              <button class="tab" data-target="code"><i class="fi fi-rr-code-branch"></i> Code</button>
+            </div>
+            <div class="preview-actions">
+               <button class="btn btn-icon-small" id="btn-refresh"><i class="fi fi-rr-refresh"></i></button>
+               <button class="btn btn-icon-small" id="btn-expand"><i class="fi fi-rr-expand"></i></button>
+            </div>
+          </div>
+          <div class="preview-content">
+            <iframe id="preview-iframe" title="Live Preview"></iframe>
+            <pre id="code-view" class="hidden"><code id="code-block"></code></pre>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden">
+      <i class="fi fi-rr-info"></i>
+      <span id="toast-message">Message</span>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="modal-overlay" class="modal-overlay hidden">
+      <div class="modal glass-panel">
+        <div class="modal-header">
+          <span style="display: flex; align-items: center; gap: 8px;"><i class="fi fi-rr-settings"></i> Settings</span>
+          <button class="btn-icon-small" id="btn-close-modal"><i class="fi fi-rr-cross-small"></i></button>
+        </div>
+        <div class="modal-body">
+          <label>Fireworks AI API Key</label>
+          <input type="password" placeholder="fw-xxxxxxxxxxxxxxxx" class="modal-input">
+          <label>System Prompt</label>
+          <textarea rows="3" class="modal-input" placeholder="You are an expert UI developer..."></textarea>
+          <button class="btn btn-primary" style="width:100%; margin-top: 10px;" id="btn-save-settings">Save Settings</button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/main.js"></script>
+  </body>
+</html>
