@@ -128,14 +128,22 @@ function extractCleanHTML(rawCode) {
   let cleaned = rawCode;
   // 1. Remove <think>...</think> blocks entirely
   cleaned = cleaned.replace(/<think>[\s\S]*?<\/think>\n*/gi, '');
-  // 2. Extract HTML markdown block if present
-  const match = cleaned.match(/```(?:html)?\s*([\s\S]*?)```/i);
-  if (match) return match[1].trim();
-  // 3. Otherwise, strip all backticks
-  cleaned = cleaned.replace(/```html|```/g, '');
-  // 4. Strip any leading conversational text before the first HTML tag
+  
+  // 2. Extract HTML markdown block if present (use the LAST block if multiple)
+  const blocks = [...cleaned.matchAll(/\`\`\`(?:html|xml)?\s*([\s\S]*?)\`\`\`/gi)];
+  if (blocks.length > 0) {
+    cleaned = blocks[blocks.length - 1][1];
+  } else {
+    // 3. Otherwise, strip all backticks
+    cleaned = cleaned.replace(/\`\`\`(?:html)?|\`\`\`/gi, '');
+  }
+  
+  // 4. ALWAYS strip any leading conversational text before the first HTML tag
   const firstTagMatch = cleaned.match(/<[a-z!]/i);
-  if (firstTagMatch) cleaned = cleaned.substring(firstTagMatch.index);
+  if (firstTagMatch) {
+    cleaned = cleaned.substring(firstTagMatch.index);
+  }
+  
   return cleaned.trim();
 }
 
