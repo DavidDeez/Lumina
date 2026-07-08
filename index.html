@@ -32,6 +32,7 @@
             <option value="accounts/fireworks/models/kimi-k2p6">Kimi K2.6 (Fast)</option>
             <option value="accounts/fireworks/models/gpt-oss-120b">GPT-OSS 120B (Powerful)</option>
           </select>
+          <button class="btn btn-icon" id="btn-history"><i class="fi fi-rr-time-past"></i></button>
           <button class="btn btn-icon" id="btn-settings"><i class="fi fi-rr-settings"></i></button>
           <button class="btn btn-primary" id="btn-deploy">
             <i class="fi fi-rr-rocket"></i> Deploy
@@ -73,6 +74,7 @@
             <div class="preview-actions">
                <button class="btn btn-icon-small" id="btn-refresh"><i class="fi fi-rr-refresh"></i></button>
                <button class="btn btn-icon-small" id="btn-expand"><i class="fi fi-rr-expand"></i></button>
+               <button class="btn btn-primary hidden" id="btn-compress" style="padding: 4px 12px; font-size: 0.8rem; margin-left: 8px;"><i class="fi fi-rr-angle-left"></i> Back to Workspace</button>
             </div>
           </div>
           <div class="preview-content">
@@ -91,7 +93,7 @@
 
     <!-- Settings Modal -->
     <div id="modal-overlay" class="modal-overlay hidden">
-      <div class="modal glass-panel">
+      <div class="modal glass-panel" id="settings-modal">
         <div class="modal-header">
           <span style="display: flex; align-items: center; gap: 8px;"><i class="fi fi-rr-settings"></i> Settings</span>
           <button class="btn-icon-small" id="btn-close-modal"><i class="fi fi-rr-cross-small"></i></button>
@@ -102,6 +104,19 @@
           <label>System Prompt</label>
           <textarea rows="3" class="modal-input" placeholder="You are an expert UI developer..."></textarea>
           <button class="btn btn-primary" style="width:100%; margin-top: 10px;" id="btn-save-settings">Save Settings</button>
+        </div>
+      </div>
+      
+      <!-- History Modal -->
+      <div class="modal glass-panel hidden" id="history-modal" style="width: 500px; max-height: 80vh;">
+        <div class="modal-header">
+          <span style="display: flex; align-items: center; gap: 8px;"><i class="fi fi-rr-time-past"></i> Generation History</span>
+          <button class="btn-icon-small" id="btn-close-history"><i class="fi fi-rr-cross-small"></i></button>
+        </div>
+        <div class="modal-body" style="overflow-y: auto; max-height: calc(80vh - 80px);">
+          <div id="history-list" style="display: flex; flex-direction: column; gap: 12px;">
+            <p class="text-slate-400 text-sm text-center">No history found.</p>
+          </div>
         </div>
       </div>
     </div>

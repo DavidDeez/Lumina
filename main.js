@@ -79,12 +79,21 @@ const btnSettings = document.getElementById('btn-settings');
 const btnDeploy = document.getElementById('btn-deploy');
 const btnRefresh = document.getElementById('btn-refresh');
 const btnExpand = document.getElementById('btn-expand');
+const btnCompress = document.getElementById('btn-compress');
+const btnHistory = document.getElementById('btn-history');
+
 const modalOverlay = document.getElementById('modal-overlay');
+const settingsModal = document.getElementById('settings-modal');
+const historyModal = document.getElementById('history-modal');
 const btnCloseModal = document.getElementById('btn-close-modal');
+const btnCloseHistory = document.getElementById('btn-close-history');
 const btnSaveSettings = document.getElementById('btn-save-settings');
+
 const toast = document.getElementById('toast');
 const toastMessage = document.getElementById('toast-message');
 const workspace = document.querySelector('.workspace');
+const previewPanel = document.querySelector('.preview-panel');
+const historyList = document.getElementById('history-list');
 
 // Settings Inputs
 const apiKeyInput = document.querySelector('.modal-input[type="password"]');
@@ -106,8 +115,22 @@ function showToast(msg) {
 }
 
 // Settings Modal
-btnSettings.addEventListener('click', () => modalOverlay.classList.remove('hidden'));
+btnSettings.addEventListener('click', () => {
+  historyModal.classList.add('hidden');
+  settingsModal.classList.remove('hidden');
+  modalOverlay.classList.remove('hidden');
+});
 btnCloseModal.addEventListener('click', () => modalOverlay.classList.add('hidden'));
+
+// History Modal
+btnHistory.addEventListener('click', () => {
+  settingsModal.classList.add('hidden');
+  historyModal.classList.remove('hidden');
+  modalOverlay.classList.remove('hidden');
+  renderHistory();
+});
+btnCloseHistory.addEventListener('click', () => modalOverlay.classList.add('hidden'));
+
 btnSaveSettings.addEventListener('click', () => {
   localStorage.setItem('fireworks_api_key', apiKeyInput.value.trim());
   localStorage.setItem('system_prompt', systemPromptInput.value.trim());
@@ -128,20 +151,57 @@ btnRefresh.addEventListener('click', () => {
   showToast('Preview refreshed.');
 });
 
-// Expand Action
-let isExpanded = false;
+// Expand Action (True Fullscreen)
 btnExpand.addEventListener('click', () => {
-  isExpanded = !isExpanded;
-  if (isExpanded) {
-    workspace.classList.add('preview-expanded');
-    btnExpand.innerHTML = '<i class="fi fi-rr-compress"></i>';
-  } else {
-    workspace.classList.remove('preview-expanded');
-    btnExpand.innerHTML = '<i class="fi fi-rr-expand"></i>';
-  }
+  previewPanel.classList.add('true-fullscreen');
+  btnExpand.classList.add('hidden');
+  btnCompress.classList.remove('hidden');
+});
+
+btnCompress.addEventListener('click', () => {
+  previewPanel.classList.remove('true-fullscreen');
+  btnExpand.classList.remove('hidden');
+  btnCompress.classList.add('hidden');
 });
 
 let conversationHistory = [];
+
+function saveToHistory(prompt, code) {
+  let pastGens = JSON.parse(localStorage.getItem('lumina_history') || '[]');
+  pastGens.unshift({
+    id: Date.now(),
+    date: new Date().toLocaleString(),
+    prompt: prompt,
+    code: code
+  });
+  // Keep last 20
+  if(pastGens.length > 20) pastGens = pastGens.slice(0, 20);
+  localStorage.setItem('lumina_history', JSON.stringify(pastGens));
+}
+
+function renderHistory() {
+  const pastGens = JSON.parse(localStorage.getItem('lumina_history') || '[]');
+  if (pastGens.length === 0) {
+    historyList.innerHTML = '<p class="text-slate-400 text-sm text-center">No history found.</p>';
+    return;
+  }
+  
+  historyList.innerHTML = '';
+  pastGens.forEach(gen => {
+    const item = document.createElement('div');
+    item.className = 'history-item';
+    item.innerHTML = `
+      <div class="history-prompt">"${gen.prompt}"</div>
+      <div class="history-date">${gen.date}</div>
+    `;
+    item.addEventListener('click', () => {
+      updatePreview(gen.code);
+      showToast('Restored previous generation.');
+      modalOverlay.classList.add('hidden');
+    });
+    historyList.appendChild(item);
+  });
+}
 
 // Real Fireworks API Generation (Non-Streaming for Reliability)
 async function generateFromFireworks(promptText) {
@@ -229,7 +289,8 @@ sendBtn.addEventListener('click', async () => {
   } else if (generatedCode) {
     // If we got a real response, extract just the HTML and render
     addMessage("Here is your requested UI, powered by Fireworks AI and Llama 3!");
-    updatePreview(`
+    
+    const finalHTML = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -238,7 +299,10 @@ sendBtn.addEventListener('click', async () => {
 <body class="bg-slate-900 text-slate-100 min-h-screen font-sans antialiased">
   ${generatedCode.replace(/```html|```/g, '')}
 </body>
-</html>`);
+</html>`;
+    
+    updatePreview(finalHTML);
+    saveToHistory(text, finalHTML);
   } else {
     // Fallback to mock generation if no API key
     setTimeout(() => {
