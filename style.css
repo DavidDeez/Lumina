@@ -655,3 +655,16 @@ body {
   font-size: 0.75rem;
   color: var(--text-muted);
 }
+
+/* Magic Edit Feature */
+#btn-magic-edit.active {
+  background: rgba(236, 72, 153, 0.2);
+  color: #ec4899;
+  border: 1px solid rgba(236, 72, 153, 0.5);
+  box-shadow: 0 0 10px rgba(236, 72, 153, 0.3);
+}
+
+#magic-edit-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}

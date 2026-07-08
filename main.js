@@ -523,3 +523,181 @@ btnExportVue.addEventListener('click', () => exportCode('Vue'));
 
 // Initial empty state for preview
 updatePreview('<div style="display:flex;height:100vh;align-items:center;justify-content:center;font-family:sans-serif;color:#888;">Preview Area</div>');
+
+// ----------------------------------------------------
+// Magic Edit Logic
+// ----------------------------------------------------
+let isMagicEditMode = false;
+let magicTargetElement = null;
+
+const btnMagicEdit = document.getElementById('btn-magic-edit');
+const magicEditOverlay = document.getElementById('magic-edit-overlay');
+const btnCloseMagic = document.getElementById('btn-close-magic');
+const btnSubmitMagic = document.getElementById('btn-submit-magic');
+const magicEditInput = document.getElementById('magic-edit-input');
+
+btnMagicEdit.addEventListener('click', () => {
+  isMagicEditMode = !isMagicEditMode;
+  btnMagicEdit.classList.toggle('active', isMagicEditMode);
+  
+  if (isMagicEditMode) {
+    showToast('Magic Edit Mode: ON. Click any element in the preview to edit it.');
+    injectMagicEditStyles();
+    attachMagicListeners();
+  } else {
+    showToast('Magic Edit Mode: OFF');
+    removeMagicListeners();
+    magicEditOverlay.classList.remove('visible');
+    magicEditOverlay.classList.add('hidden');
+    magicTargetElement = null;
+  }
+});
+
+btnCloseMagic.addEventListener('click', () => {
+  magicEditOverlay.classList.remove('visible');
+  magicEditOverlay.classList.add('hidden');
+  magicTargetElement = null;
+  magicEditInput.value = '';
+});
+
+function injectMagicEditStyles() {
+  const iframeDoc = previewIframe.contentDocument || previewIframe.contentWindow.document;
+  if (!iframeDoc.getElementById('magic-edit-styles')) {
+    const style = iframeDoc.createElement('style');
+    style.id = 'magic-edit-styles';
+    style.innerHTML = \`
+      .magic-edit-hover {
+        outline: 2px dashed #ec4899 !important;
+        outline-offset: 2px !important;
+        cursor: crosshair !important;
+        box-shadow: 0 0 10px rgba(236, 72, 153, 0.4) !important;
+        transition: outline 0.1s !important;
+      }
+    \`;
+    iframeDoc.head.appendChild(style);
+  }
+}
+
+const magicMouseOver = (e) => {
+  if (!isMagicEditMode) return;
+  e.stopPropagation();
+  e.target.classList.add('magic-edit-hover');
+};
+
+const magicMouseOut = (e) => {
+  if (!isMagicEditMode) return;
+  e.stopPropagation();
+  e.target.classList.remove('magic-edit-hover');
+};
+
+const magicClick = (e) => {
+  if (!isMagicEditMode) return;
+  e.preventDefault();
+  e.stopPropagation();
+  
+  magicTargetElement = e.target;
+  magicTargetElement.classList.remove('magic-edit-hover');
+  
+  // Position overlay near cursor
+  const rect = previewIframe.getBoundingClientRect();
+  let x = e.clientX + rect.left + 20;
+  let y = e.clientY + rect.top;
+  
+  // constrain to viewport
+  if (x + 320 > window.innerWidth) x = window.innerWidth - 340;
+  if (y + 200 > window.innerHeight) y = window.innerHeight - 220;
+
+  magicEditOverlay.style.left = x + 'px';
+  magicEditOverlay.style.top = y + 'px';
+  
+  magicEditOverlay.classList.remove('hidden');
+  magicEditOverlay.classList.add('visible');
+  magicEditInput.focus();
+};
+
+function attachMagicListeners() {
+  const iframeDoc = previewIframe.contentDocument || previewIframe.contentWindow.document;
+  iframeDoc.body.addEventListener('mouseover', magicMouseOver, true);
+  iframeDoc.body.addEventListener('mouseout', magicMouseOut, true);
+  iframeDoc.body.addEventListener('click', magicClick, true);
+}
+
+function removeMagicListeners() {
+  const iframeDoc = previewIframe.contentDocument || previewIframe.contentWindow.document;
+  iframeDoc.body.removeEventListener('mouseover', magicMouseOver, true);
+  iframeDoc.body.removeEventListener('mouseout', magicMouseOut, true);
+  iframeDoc.body.removeEventListener('click', magicClick, true);
+  
+  // cleanup any stuck classes
+  const hovered = iframeDoc.querySelectorAll('.magic-edit-hover');
+  hovered.forEach(el => el.classList.remove('magic-edit-hover'));
+}
+
+btnSubmitMagic.addEventListener('click', async () => {
+  const instruction = magicEditInput.value.trim();
+  if (!instruction || !magicTargetElement) return;
+  
+  btnSubmitMagic.innerHTML = '<i class="fi fi-rr-spinner animate-spin"></i> Updating...';
+  btnSubmitMagic.disabled = true;
+  
+  const originalHTML = magicTargetElement.outerHTML;
+  
+  const apiKey = localStorage.getItem('fireworks_api_key') || fallbackKey;
+  const selectedModel = document.getElementById('model-select').value;
+  
+  const prompt = \`You are an expert UI developer. I have the following HTML element:
+\\\`\\\`\\\`html
+\${originalHTML}
+\\\`\\\`\\\`
+The user wants to apply the following change to it: "\${instruction}"
+Return ONLY the updated HTML for this element, retaining any Tailwind classes it needs, and without markdown backticks. Do NOT return the entire page.\`;
+
+  try {
+    const response = await fetch('https://api.fireworks.ai/inference/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': \`Bearer \${apiKey}\`
+      },
+      body: JSON.stringify({
+        model: selectedModel,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.3,
+        max_tokens: 2000
+      })
+    });
+    
+    if (!response.ok) throw new Error("API Error");
+    const data = await response.json();
+    let newHTML = data.choices[0].message.content;
+    
+    // Clean up markdown if present
+    const match = newHTML.match(/\`\`\`(?:html)?\\s*([\\s\\S]*?)\`\`\`/i);
+    if (match) newHTML = match[1];
+    else newHTML = newHTML.replace(/\`\`\`html|\`\`\`/g, '');
+    
+    // Replace the element in the iframe
+    magicTargetElement.outerHTML = newHTML;
+    
+    // Update code block as well
+    const iframeDoc = previewIframe.contentDocument || previewIframe.contentWindow.document;
+    document.getElementById('code-block').textContent = iframeDoc.documentElement.outerHTML;
+    
+    showToast("Element updated successfully!");
+    magicEditOverlay.classList.remove('visible');
+    magicEditOverlay.classList.add('hidden');
+    magicEditInput.value = '';
+    magicTargetElement = null;
+    
+    // Turn off magic mode after edit
+    btnMagicEdit.click();
+    
+  } catch(e) {
+    console.error(e);
+    showToast("Failed to modify element.");
+  } finally {
+    btnSubmitMagic.innerHTML = 'Update Element';
+    btnSubmitMagic.disabled = false;
+  }
+});
+

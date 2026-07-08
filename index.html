@@ -78,6 +78,7 @@
               <button class="tab" data-target="code"><i class="fi fi-rr-code-branch"></i> Code</button>
             </div>
             <div class="preview-actions">
+               <button class="btn btn-icon-small" id="btn-magic-edit" title="Magic Edit Mode"><i class="fi fi-rr-magic-wand"></i></button>
                <button class="btn btn-icon-small" id="btn-refresh"><i class="fi fi-rr-refresh"></i></button>
                <button class="btn btn-icon-small" id="btn-expand"><i class="fi fi-rr-expand"></i></button>
                <button class="btn btn-primary hidden" id="btn-compress" style="padding: 4px 12px; font-size: 0.8rem; margin-left: 8px;"><i class="fi fi-rr-angle-left"></i> Back to Workspace</button>
@@ -101,6 +102,16 @@
     <div id="toast" class="toast hidden">
       <i class="fi fi-rr-info"></i>
       <span id="toast-message">Message</span>
+    </div>
+
+    <!-- Magic Edit Overlay -->
+    <div id="magic-edit-overlay" class="hidden" style="position: fixed; z-index: 9999; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(12px); border: 1px solid #ec4899; border-radius: 12px; padding: 16px; width: 320px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 12px; opacity: 0; pointer-events: none; transition: opacity 0.2s;">
+      <div style="font-size: 0.9rem; font-weight: 600; color: white; display: flex; align-items: center; justify-content: space-between;">
+        <span><i class="fi fi-rr-magic-wand" style="color: #ec4899; margin-right: 6px;"></i> Magic Edit</span>
+        <button id="btn-close-magic" style="background: transparent; border: none; color: #94a3b8; cursor: pointer;"><i class="fi fi-rr-cross-small"></i></button>
+      </div>
+      <textarea id="magic-edit-input" placeholder="e.g. Make this button red" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 8px; color: white; font-size: 0.85rem; resize: none; height: 60px;"></textarea>
+      <button id="btn-submit-magic" class="btn btn-primary" style="padding: 6px; font-size: 0.85rem; width: 100%; background: linear-gradient(135deg, #ec4899, #f43f5e);">Update Element</button>
     </div>
 
     <!-- Settings Modal -->
