@@ -396,6 +396,16 @@ sendBtn.addEventListener('click', async () => {
     // If we got a real response, extract just the HTML and render
     addMessage("Here is your requested UI, powered by Fireworks AI and Llama 3!");
     
+    // Extract HTML code block if present
+    let extractedHTML = generatedCode;
+    const match = generatedCode.match(/```(?:html)?\s*([\s\S]*?)```/i);
+    if (match) {
+      extractedHTML = match[1];
+    } else {
+      // Clean up raw text if no codeblock
+      extractedHTML = generatedCode.replace(/```html|```/g, '');
+    }
+
     const finalHTML = `
 <!DOCTYPE html>
 <html>
@@ -403,7 +413,7 @@ sendBtn.addEventListener('click', async () => {
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen font-sans antialiased">
-  ${generatedCode.replace(/```html|```/g, '')}
+  ${extractedHTML}
 </body>
 </html>`;
     
