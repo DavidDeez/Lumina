@@ -123,6 +123,22 @@ function showToast(msg) {
   setTimeout(() => toast.classList.add('hidden'), 3000);
 }
 
+// Robust HTML extraction helper to strip thoughts, markdown, and conversational text
+function extractCleanHTML(rawCode) {
+  let cleaned = rawCode;
+  // 1. Remove <think>...</think> blocks entirely
+  cleaned = cleaned.replace(/<think>[\s\S]*?<\/think>\n*/gi, '');
+  // 2. Extract HTML markdown block if present
+  const match = cleaned.match(/```(?:html)?\s*([\s\S]*?)```/i);
+  if (match) return match[1].trim();
+  // 3. Otherwise, strip all backticks
+  cleaned = cleaned.replace(/```html|```/g, '');
+  // 4. Strip any leading conversational text before the first HTML tag
+  const firstTagMatch = cleaned.match(/<[a-z!]/i);
+  if (firstTagMatch) cleaned = cleaned.substring(firstTagMatch.index);
+  return cleaned.trim();
+}
+
 // Image Upload Logic
 let currentBase64Image = null;
 
@@ -407,15 +423,8 @@ sendBtn.addEventListener('click', async () => {
     // If we got a real response, extract just the HTML and render
     addMessage("Here is your requested UI, powered by Fireworks AI and Llama 3!");
     
-    // Extract HTML code block if present
-    let extractedHTML = generatedCode;
-    const match = generatedCode.match(/```(?:html)?\s*([\s\S]*?)```/i);
-    if (match) {
-      extractedHTML = match[1];
-    } else {
-      // Clean up raw text if no codeblock
-      extractedHTML = generatedCode.replace(/```html|```/g, '');
-    }
+    // Extract HTML robustly
+    let extractedHTML = extractCleanHTML(generatedCode);
 
     const finalHTML = `
 <!DOCTYPE html>
@@ -682,10 +691,8 @@ Return ONLY the updated HTML for this element, retaining any Tailwind classes it
     const data = await response.json();
     let newHTML = data.choices[0].message.content;
     
-    // Clean up markdown if present
-    const match = newHTML.match(/\`\`\`(?:html)?\\s*([\\s\\S]*?)\`\`\`/i);
-    if (match) newHTML = match[1];
-    else newHTML = newHTML.replace(/\`\`\`html|\`\`\`/g, '');
+    // Clean up markdown and thoughts if present
+    newHTML = extractCleanHTML(newHTML);
     
     // Replace the element in the iframe
     magicTargetElement.outerHTML = newHTML;
