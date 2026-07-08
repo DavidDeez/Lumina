@@ -106,15 +106,20 @@ const btnExportVue = document.getElementById('btn-export-vue');
 
 // Settings Inputs
 const apiKeyInput = document.querySelector('.modal-input[type="password"]');
-const systemPromptInput = document.querySelector('.modal-input[placeholder="You are an expert UI developer..."]');
+const systemPromptInput = document.getElementById('system-prompt-input') || document.querySelector('.modal-input[placeholder="You are an expert UI developer..."]');
+const deployUrlInput = document.getElementById('deploy-url-input');
 
 // Load settings from LocalStorage
 window.addEventListener('DOMContentLoaded', () => {
   const savedKey = localStorage.getItem('fireworks_api_key');
   const savedPrompt = localStorage.getItem('system_prompt');
+  const savedDeployUrl = localStorage.getItem('amd_deploy_url');
+  
   if (savedKey) apiKeyInput.value = savedKey;
   if (savedPrompt) systemPromptInput.value = savedPrompt;
   else systemPromptInput.value = "You are an expert UI developer. Create a beautiful, modern, dark-mode Tailwind CSS component based on the user's request. Output ONLY valid HTML with Tailwind classes inside the <body> tag. Do not use markdown blocks like ```html. Just return the raw HTML.";
+  
+  if (savedDeployUrl && deployUrlInput) deployUrlInput.value = savedDeployUrl;
 });
 
 function showToast(msg) {
@@ -195,14 +200,56 @@ btnCloseHistory.addEventListener('click', () => modalOverlay.classList.add('hidd
 btnSaveSettings.addEventListener('click', () => {
   localStorage.setItem('fireworks_api_key', apiKeyInput.value.trim());
   localStorage.setItem('system_prompt', systemPromptInput.value.trim());
+  if (deployUrlInput) localStorage.setItem('amd_deploy_url', deployUrlInput.value.trim());
   modalOverlay.classList.add('hidden');
   showToast('Settings saved successfully.');
 });
 
-// Deploy Action
-btnDeploy.addEventListener('click', () => {
-  showToast('Deploying application to Edge...');
-  setTimeout(() => showToast('Deployed successfully! Link copied to clipboard.'), 2000);
+// Deploy Action (AMD Cloud / Local Server)
+btnDeploy.addEventListener('click', async () => {
+  const code = codeBlock.textContent.trim();
+  if (!code) {
+    showToast('Nothing to deploy yet! Generate some UI first.');
+    return;
+  }
+
+  const deployUrl = localStorage.getItem('amd_deploy_url') || 'http://localhost:3001/deploy';
+  
+  showToast('Deploying to AMD Cloud...');
+  btnDeploy.disabled = true;
+  const originalText = btnDeploy.innerHTML;
+  btnDeploy.innerHTML = '<i class="fi fi-rr-spinner animate-spin"></i> Deploying';
+
+  try {
+    const response = await fetch(deployUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain', // Our server expects raw body
+      },
+      body: code
+    });
+
+    if (!response.ok) throw new Error(\`Server returned \${response.status}\`);
+    
+    const data = await response.json();
+    if (data.success && data.url) {
+      showToast('Deployed successfully! Opening live URL...');
+      
+      // Auto-open in new tab
+      window.open(data.url, '_blank');
+      
+      // Copy to clipboard
+      navigator.clipboard.writeText(data.url).catch(e => console.error("Clipboard error", e));
+    } else {
+      throw new Error('Invalid response from deploy server');
+    }
+  } catch (error) {
+    console.error('Deploy error:', error);
+    showToast('Deploy failed. Check server console and settings.');
+  } finally {
+    btnDeploy.disabled = false;
+    btnDeploy.innerHTML = originalText;
+  }
 });
 
 // Refresh Action
