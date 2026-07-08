@@ -206,7 +206,7 @@ async function generateFromFireworks(promptText) {
       if (!firstTokenTime) firstTokenTime = performance.now() - startTime;
       
       const chunk = decoder.decode(value, { stream: true });
-      const lines = chunk.split('\\n');
+      const lines = chunk.split('\n');
       
       for (const line of lines) {
         if (line.startsWith('data: ') && !line.includes('[DONE]')) {
