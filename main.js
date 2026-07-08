@@ -95,6 +95,15 @@ const workspace = document.querySelector('.workspace');
 const previewPanel = document.querySelector('.preview-panel');
 const historyList = document.getElementById('history-list');
 
+const imageUpload = document.getElementById('image-upload');
+const btnUpload = document.getElementById('btn-upload');
+const imagePreviewContainer = document.getElementById('image-preview-container');
+const imageThumbnail = document.getElementById('image-thumbnail');
+const btnRemoveImage = document.getElementById('btn-remove-image');
+
+const btnExportReact = document.getElementById('btn-export-react');
+const btnExportVue = document.getElementById('btn-export-vue');
+
 // Settings Inputs
 const apiKeyInput = document.querySelector('.modal-input[type="password"]');
 const systemPromptInput = document.querySelector('.modal-input[placeholder="You are an expert UI developer..."]');
@@ -113,6 +122,34 @@ function showToast(msg) {
   toast.classList.remove('hidden');
   setTimeout(() => toast.classList.add('hidden'), 3000);
 }
+
+// Image Upload Logic
+let currentBase64Image = null;
+
+btnUpload.addEventListener('click', () => imageUpload.click());
+
+imageUpload.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      currentBase64Image = e.target.result;
+      imageThumbnail.src = currentBase64Image;
+      imagePreviewContainer.classList.remove('hidden');
+      
+      // Auto switch to Kimi K2.6 for vision
+      document.getElementById('model-select').value = "accounts/fireworks/models/kimi-k2p6";
+      showToast('Switched to Vision Model (Kimi K2.6)');
+    };
+    reader.readAsDataURL(file);
+  }
+});
+
+btnRemoveImage.addEventListener('click', () => {
+  currentBase64Image = null;
+  imagePreviewContainer.classList.add('hidden');
+  imageUpload.value = '';
+});
 
 // Settings Modal
 btnSettings.addEventListener('click', () => {
@@ -226,7 +263,19 @@ async function generateFromFireworks(promptText) {
   
   let startTime = performance.now();
   
-  conversationHistory.push({ role: 'user', content: promptText });
+  let userMessageContent = promptText || "Convert this image to code.";
+  if (currentBase64Image) {
+    userMessageContent = [
+      { type: 'text', text: userMessageContent },
+      { type: 'image_url', image_url: { url: currentBase64Image } }
+    ];
+  }
+  conversationHistory.push({ role: 'user', content: userMessageContent });
+  
+  // Clear image
+  currentBase64Image = null;
+  imagePreviewContainer.classList.add('hidden');
+  imageUpload.value = '';
 
     let response;
     let retries = 2;
@@ -372,6 +421,91 @@ promptInput.addEventListener('keydown', (e) => {
     sendBtn.click();
   }
 });
+
+// Code Export Logic
+async function exportCode(framework) {
+  const currentCode = codeBlock.textContent;
+  if (!currentCode || currentCode.trim() === '' || currentCode.includes('Preview Area')) {
+    showToast('No valid code to export!');
+    return;
+  }
+  
+  const fallbackKey = atob('ZndfMkt3VTlFcDJVZm1Wa2lhM1U0R285NA==');
+  const apiKey = localStorage.getItem('fireworks_api_key') || fallbackKey;
+  const metricsUI = document.getElementById('amd-metrics');
+  
+  showToast(`Exporting to ${framework}...`);
+  metricsUI.classList.add('active');
+  metricsUI.innerHTML = `<i class="fi fi-rr-dashboard"></i> AMD GPU: Transpiling...`;
+  
+  let startTime = performance.now();
+  
+  try {
+    const response = await fetch('https://api.fireworks.ai/inference/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'accounts/fireworks/models/deepseek-v4-pro',
+        messages: [
+          { role: 'system', content: `You are an expert developer. Convert the provided HTML/Tailwind into a complete, valid ${framework} component. Do not use markdown blocks like \`\`\`jsx. Output ONLY raw code.` },
+          { role: 'user', content: currentCode }
+        ],
+        temperature: 0.1,
+        max_tokens: 4000,
+        stream: true
+      })
+    });
+    
+    if (!response.ok) throw new Error('Export Failed');
+    
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let done = false;
+    let fullCode = "";
+    let buffer = "";
+
+    codeBlock.textContent = "";
+
+    while (!done) {
+      const { value, done: readerDone } = await reader.read();
+      done = readerDone;
+      if (value) {
+        buffer += decoder.decode(value, { stream: true });
+        let lines = buffer.split('\n');
+        buffer = lines.pop();
+
+        for (const line of lines) {
+          if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+            try {
+              const parsed = JSON.parse(line.slice(6));
+              if (parsed.choices[0].delta.content) {
+                fullCode += parsed.choices[0].delta.content;
+                codeBlock.textContent = fullCode;
+                
+                const currentElapsed = (performance.now() - startTime) / 1000;
+                const tokens = fullCode.length / 4;
+                const speed = Math.round(tokens / currentElapsed);
+                metricsUI.innerHTML = `<i class="fi fi-rr-dashboard"></i> AMD GPU: ${speed} t/s | ${currentElapsed.toFixed(1)}s`;
+              }
+            } catch (e) {}
+          }
+        }
+      }
+    }
+    
+    metricsUI.classList.remove('active');
+    showToast(`Exported to ${framework} successfully!`);
+  } catch (error) {
+    showToast('Failed to export code.');
+    metricsUI.classList.remove('active');
+  }
+}
+
+btnExportReact.addEventListener('click', () => exportCode('React'));
+btnExportVue.addEventListener('click', () => exportCode('Vue'));
 
 // Initial empty state for preview
 updatePreview('<div style="display:flex;height:100vh;align-items:center;justify-content:center;font-family:sans-serif;color:#888;">Preview Area</div>');

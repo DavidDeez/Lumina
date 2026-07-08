@@ -53,7 +53,13 @@
             </div>
           </div>
           <div class="chat-input-container">
+            <div id="image-preview-container" class="hidden mb-2 relative inline-block">
+              <img id="image-thumbnail" src="" class="w-16 h-16 object-cover rounded-md border border-slate-700" />
+              <button id="btn-remove-image" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">x</button>
+            </div>
             <div class="input-wrapper">
+              <input type="file" id="image-upload" accept="image/*" class="hidden">
+              <button id="btn-upload" class="btn-icon text-slate-400 hover:text-white px-3"><i class="fi fi-rr-picture"></i></button>
               <textarea id="prompt-input" placeholder="e.g. Create a sleek dark-mode pricing table..." rows="2"></textarea>
               <button id="send-btn" class="btn-send"><i class="fi fi-rr-paper-plane"></i></button>
             </div>
@@ -79,7 +85,13 @@
           </div>
           <div class="preview-content">
             <iframe id="preview-iframe" title="Live Preview"></iframe>
-            <pre id="code-view" class="hidden"><code id="code-block"></code></pre>
+            <div id="code-view" class="hidden" style="position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(10,10,15,0.95); padding: 32px; overflow: auto; display: flex; flex-direction: column;">
+              <div class="export-toolbar" style="position: absolute; top: 12px; right: 24px; display: flex; gap: 8px; z-index: 10;">
+                 <button class="btn" id="btn-export-react" style="background: rgba(255,255,255,0.1); color: white; padding: 4px 10px; font-size: 0.8rem; border-radius: 4px; border: 1px solid var(--panel-border);">⚛️ React</button>
+                 <button class="btn" id="btn-export-vue" style="background: rgba(255,255,255,0.1); color: white; padding: 4px 10px; font-size: 0.8rem; border-radius: 4px; border: 1px solid var(--panel-border);">🟩 Vue</button>
+              </div>
+              <pre style="margin-top: 24px;"><code id="code-block"></code></pre>
+            </div>
           </div>
         </section>
       </main>
