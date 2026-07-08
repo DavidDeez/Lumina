@@ -155,6 +155,8 @@ btnExpand.addEventListener('click', () => {
   }
 });
 
+let conversationHistory = [];
+
 // Real Fireworks API Generation (Non-Streaming for Reliability)
 async function generateFromFireworks(promptText) {
   const apiKey = localStorage.getItem('fireworks_api_key');
@@ -172,6 +174,8 @@ async function generateFromFireworks(promptText) {
   metricsUI.innerHTML = `<i class="fi fi-rr-dashboard"></i> AMD GPU: Generating...`;
   
   let startTime = performance.now();
+  
+  conversationHistory.push({ role: 'user', content: promptText });
 
   try {
     const response = await fetch('https://api.fireworks.ai/inference/v1/chat/completions', {
@@ -184,7 +188,7 @@ async function generateFromFireworks(promptText) {
         model: selectedModel,
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: promptText }
+          ...conversationHistory
         ],
         temperature: 0.5,
         max_tokens: 4000
@@ -198,6 +202,8 @@ async function generateFromFireworks(promptText) {
     
     const data = await response.json();
     const fullCode = data.choices[0].message.content;
+    
+    conversationHistory.push({ role: 'assistant', content: fullCode });
     
     const elapsed = (performance.now() - startTime) / 1000;
     const tokens = data.usage?.completion_tokens || fullCode.length / 4;
