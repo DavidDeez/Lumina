@@ -218,7 +218,7 @@ async function generateFromFireworks(promptText) {
     showToast('Failed to generate code from API.');
     metricsUI.classList.remove('active');
     metricsUI.innerHTML = `<i class="fi fi-rr-dashboard"></i> AMD GPU: Error`;
-    return null;
+    return `ERROR_PREFIX:${error.message}`;
   }
 }
 
@@ -233,7 +233,9 @@ sendBtn.addEventListener('click', async () => {
   // Try real API first
   const generatedCode = await generateFromFireworks(text);
   
-  if (generatedCode) {
+  if (generatedCode && generatedCode.startsWith('ERROR_PREFIX:')) {
+     addMessage(`⚠️ **API Connection Failed:** ${generatedCode.replace('ERROR_PREFIX:', '')}. Please check your API key in Settings.`);
+  } else if (generatedCode) {
     // If we got a real response, extract just the HTML and render
     addMessage("Here is your requested UI, powered by Fireworks AI and Llama 3!");
     updatePreview(`
