@@ -55,21 +55,7 @@ function updatePreview(code) {
   codeBlock.textContent = code;
 }
 
-sendBtn.addEventListener('click', () => {
-  const text = promptInput.value.trim();
-  if (!text) return;
-  
-  // Add user message
-  addMessage(text, true);
-  promptInput.value = '';
-  
-  // Simulate AI generation delay
-  setTimeout(() => {
-    addMessage("I've generated the UI based on your request using Tailwind CSS. Here is the live preview:");
-    updatePreview(mockGeneratedHTML);
-  }, 1000);
-});
-
+// Mock generation removed, handled by primary listener
 // Tab Switching
 tabs.forEach(tab => {
   tab.addEventListener('click', () => {
