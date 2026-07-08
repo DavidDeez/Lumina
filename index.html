@@ -37,8 +37,15 @@
           <button class="btn btn-primary" id="btn-deploy">
             <i class="fi fi-rr-rocket"></i> Deploy
           </button>
+          <button class="btn btn-secondary" id="btn-refresh" title="Refresh Preview">
+            <i class="fi fi-rr-refresh"></i>
+          </button>
         </div>
       </nav>
+      <div id="deploy-link-container" class="hidden" style="margin-top: 10px; padding: 10px; background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; border-radius: 8px; font-size: 0.9rem; text-align: center;">
+        <span style="color: #10b981;"><i class="fi fi-rr-check-circle"></i> Deployed! </span>
+        <a id="deploy-live-link" href="#" target="_blank" style="color: white; text-decoration: underline; font-weight: 500; margin-left: 8px;">Open Live Site <i class="fi fi-rr-arrow-up-right"></i></a>
+      </div>
       
       <main class="workspace">
         <!-- Chat Panel -->

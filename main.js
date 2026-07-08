@@ -206,6 +206,9 @@ btnSaveSettings.addEventListener('click', () => {
 });
 
 // Deploy Action (AMD Cloud / Local Server)
+const deployLinkContainer = document.getElementById('deploy-link-container');
+const deployLiveLink = document.getElementById('deploy-live-link');
+
 btnDeploy.addEventListener('click', async () => {
   const code = codeBlock.textContent.trim();
   if (!code) {
@@ -217,11 +220,9 @@ btnDeploy.addEventListener('click', async () => {
   
   showToast('Deploying to AMD Cloud...');
   btnDeploy.disabled = true;
+  deployLinkContainer.classList.add('hidden');
   const originalText = btnDeploy.innerHTML;
   btnDeploy.innerHTML = '<i class="fi fi-rr-spinner animate-spin"></i> Deploying';
-
-  // Open window synchronously to avoid popup blockers
-  const newWin = window.open('about:blank', '_blank');
 
   try {
     const response = await fetch(deployUrl, {
@@ -236,10 +237,11 @@ btnDeploy.addEventListener('click', async () => {
     
     const data = await response.json();
     if (data.success && data.url) {
-      showToast('Deployed successfully! Opening live URL...');
+      showToast('Deployed successfully!');
       
-      // Navigate the opened tab to the deployed URL
-      newWin.location.href = data.url;
+      // Show the clickable link below the button
+      deployLiveLink.href = data.url;
+      deployLinkContainer.classList.remove('hidden');
       
       // Copy to clipboard
       navigator.clipboard.writeText(data.url).catch(e => console.error("Clipboard error", e));
@@ -248,7 +250,6 @@ btnDeploy.addEventListener('click', async () => {
     }
   } catch (error) {
     console.error('Deploy error:', error);
-    if (newWin) newWin.close(); // Close the blank tab if it failed
     showToast('Deploy failed. Check server console and settings.');
   } finally {
     btnDeploy.disabled = false;
