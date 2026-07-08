@@ -220,6 +220,9 @@ btnDeploy.addEventListener('click', async () => {
   const originalText = btnDeploy.innerHTML;
   btnDeploy.innerHTML = '<i class="fi fi-rr-spinner animate-spin"></i> Deploying';
 
+  // Open window synchronously to avoid popup blockers
+  const newWin = window.open('about:blank', '_blank');
+
   try {
     const response = await fetch(deployUrl, {
       method: 'POST',
@@ -235,8 +238,8 @@ btnDeploy.addEventListener('click', async () => {
     if (data.success && data.url) {
       showToast('Deployed successfully! Opening live URL...');
       
-      // Auto-open in new tab
-      window.open(data.url, '_blank');
+      // Navigate the opened tab to the deployed URL
+      newWin.location.href = data.url;
       
       // Copy to clipboard
       navigator.clipboard.writeText(data.url).catch(e => console.error("Clipboard error", e));
@@ -245,6 +248,7 @@ btnDeploy.addEventListener('click', async () => {
     }
   } catch (error) {
     console.error('Deploy error:', error);
+    if (newWin) newWin.close(); // Close the blank tab if it failed
     showToast('Deploy failed. Check server console and settings.');
   } finally {
     btnDeploy.disabled = false;
