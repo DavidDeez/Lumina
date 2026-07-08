@@ -277,6 +277,7 @@ async function generateFromFireworks(promptText) {
   imagePreviewContainer.classList.add('hidden');
   imageUpload.value = '';
 
+  try {
     let response;
     let retries = 2;
     
