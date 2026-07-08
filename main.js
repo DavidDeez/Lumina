@@ -323,6 +323,7 @@ async function generateFromFireworks(promptText) {
     const decoder = new TextDecoder('utf-8');
     let done = false;
     let fullCode = "";
+    let fullThoughts = "";
     let buffer = "";
 
     while (!done) {
@@ -339,13 +340,19 @@ async function generateFromFireworks(promptText) {
             try {
               const parsed = JSON.parse(line.slice(6));
               const delta = parsed.choices[0].delta;
-              let chunkText = delta.content || delta.reasoning_content;
-              if (chunkText) {
-                fullCode += chunkText;
-                codeBlock.textContent = fullCode;
+              
+              if (delta.reasoning_content) fullThoughts += delta.reasoning_content;
+              if (delta.content) fullCode += delta.content;
+              
+              if (fullThoughts || fullCode) {
+                let displayText = fullCode;
+                if (fullThoughts) {
+                  displayText = `<!-- AI Thoughts:\n${fullThoughts}\n-->\n\n${fullCode}`;
+                }
+                codeBlock.textContent = displayText;
                 
                 const currentElapsed = (performance.now() - startTime) / 1000;
-                const tokens = fullCode.length / 4;
+                const tokens = (fullThoughts.length + fullCode.length) / 4;
                 const speed = Math.round(tokens / currentElapsed);
                 metricsUI.innerHTML = `<i class="fi fi-rr-dashboard"></i> AMD GPU: ${speed} t/s | ${currentElapsed.toFixed(1)}s`;
               }
@@ -368,6 +375,10 @@ async function generateFromFireworks(promptText) {
     document.querySelector('[data-target="preview"]').classList.add('active');
     previewIframe.classList.remove('hidden');
     document.getElementById('code-view').classList.add('hidden');
+    
+    if (fullCode.trim() === "" && fullThoughts.trim() !== "") {
+      return `ERROR_PREFIX:The vision model was thinking, but hit the token limit or failed to output HTML. Please try a simpler image or prompt.`;
+    }
     
     return fullCode;
   } catch (error) {
