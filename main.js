@@ -228,23 +228,34 @@ async function generateFromFireworks(promptText) {
   
   conversationHistory.push({ role: 'user', content: promptText });
 
-  try {
-    const response = await fetch('https://api.fireworks.ai/inference/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: selectedModel,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          ...conversationHistory
-        ],
-        temperature: 0.5,
-        max_tokens: 4000
-      })
-    });
+    let response;
+    let retries = 2;
+    
+    while (retries >= 0) {
+      try {
+        response = await fetch('https://api.fireworks.ai/inference/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model: selectedModel,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              ...conversationHistory
+            ],
+            temperature: 0.5,
+            max_tokens: 4000
+          })
+        });
+        break; // If successful, break out of retry loop
+      } catch (err) {
+        if (retries === 0) throw err;
+        retries--;
+        await new Promise(r => setTimeout(r, 1000)); // Wait 1s before retry
+      }
+    }
 
     if (!response.ok) {
         const errText = await response.text();
