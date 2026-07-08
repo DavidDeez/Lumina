@@ -246,7 +246,8 @@ async function generateFromFireworks(promptText) {
               ...conversationHistory
             ],
             temperature: 0.5,
-            max_tokens: 4000
+            max_tokens: 4000,
+            stream: true
           })
         });
         break; // If successful, break out of retry loop
@@ -262,17 +263,58 @@ async function generateFromFireworks(promptText) {
         throw new Error(`API Error: ${response.status} - ${errText}`);
     }
     
-    const data = await response.json();
-    const fullCode = data.choices[0].message.content;
+    // Switch to Code View to watch it type
+    tabs.forEach(t => t.classList.remove('active'));
+    document.querySelector('[data-target="code"]').classList.add('active');
+    previewIframe.classList.add('hidden');
+    document.getElementById('code-view').classList.remove('hidden');
+    
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let done = false;
+    let fullCode = "";
+    let buffer = "";
+
+    while (!done) {
+      const { value, done: readerDone } = await reader.read();
+      done = readerDone;
+      if (value) {
+        buffer += decoder.decode(value, { stream: true });
+        
+        let lines = buffer.split('\n');
+        buffer = lines.pop(); // Keep incomplete line in buffer
+
+        for (const line of lines) {
+          if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+            try {
+              const parsed = JSON.parse(line.slice(6));
+              if (parsed.choices[0].delta.content) {
+                fullCode += parsed.choices[0].delta.content;
+                codeBlock.textContent = fullCode;
+                
+                const currentElapsed = (performance.now() - startTime) / 1000;
+                const tokens = fullCode.length / 4;
+                const speed = Math.round(tokens / currentElapsed);
+                metricsUI.innerHTML = `<i class="fi fi-rr-dashboard"></i> AMD GPU: ${speed} t/s | ${currentElapsed.toFixed(1)}s`;
+              }
+            } catch (e) {
+              // ignore parse errors for partial chunks
+            }
+          }
+        }
+      }
+    }
     
     conversationHistory.push({ role: 'assistant', content: fullCode });
     
     const elapsed = (performance.now() - startTime) / 1000;
-    const tokens = data.usage?.completion_tokens || fullCode.length / 4;
-    const speed = Math.round(tokens / elapsed);
-    
     metricsUI.classList.remove('active');
-    metricsUI.innerHTML = `<i class="fi fi-rr-dashboard"></i> AMD GPU: ${speed} t/s | ${elapsed.toFixed(1)}s total`;
+    
+    // Switch back to Preview when done
+    tabs.forEach(t => t.classList.remove('active'));
+    document.querySelector('[data-target="preview"]').classList.add('active');
+    previewIframe.classList.remove('hidden');
+    document.getElementById('code-view').classList.add('hidden');
     
     return fullCode;
   } catch (error) {
