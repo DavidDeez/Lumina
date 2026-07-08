@@ -338,8 +338,10 @@ async function generateFromFireworks(promptText) {
           if (line.startsWith('data: ') && line !== 'data: [DONE]') {
             try {
               const parsed = JSON.parse(line.slice(6));
-              if (parsed.choices[0].delta.content) {
-                fullCode += parsed.choices[0].delta.content;
+              const delta = parsed.choices[0].delta;
+              let chunkText = delta.content || delta.reasoning_content;
+              if (chunkText) {
+                fullCode += chunkText;
                 codeBlock.textContent = fullCode;
                 
                 const currentElapsed = (performance.now() - startTime) / 1000;
@@ -359,6 +361,7 @@ async function generateFromFireworks(promptText) {
     
     const elapsed = (performance.now() - startTime) / 1000;
     metricsUI.classList.remove('active');
+    metricsUI.innerHTML = `<i class="fi fi-rr-dashboard"></i> AMD GPU: Idle`;
     
     // Switch back to Preview when done
     tabs.forEach(t => t.classList.remove('active'));
