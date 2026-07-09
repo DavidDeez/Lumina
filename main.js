@@ -725,19 +725,19 @@ btnSubmitMagic.addEventListener('click', async () => {
   const apiKey = localStorage.getItem('fireworks_api_key') || fallbackKey;
   const selectedModel = document.getElementById('model-select').value;
   
-  const prompt = `You are an expert UI developer. I have the following HTML element:
-```html
+  const prompt = \`You are an expert UI developer. I have the following HTML element:
+\\\`\\\`\\\`html
 \${originalHTML}
-```
+\\\`\\\`\\\`
 The user wants to apply the following change to it: "\${instruction}"
-Return ONLY the updated HTML for this element, retaining any Tailwind classes it needs, and without markdown backticks. Do NOT return the entire page.`;
+Return ONLY the updated HTML for this element, retaining any Tailwind classes it needs, and without markdown backticks. Do NOT return the entire page.\`;
 
   try {
     const response = await fetch('https://api.fireworks.ai/inference/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
+        'Authorization': \`Bearer \${apiKey}\`
       },
       body: JSON.stringify({
         model: selectedModel,
