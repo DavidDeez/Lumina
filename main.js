@@ -233,7 +233,7 @@ btnDeploy.addEventListener('click', async () => {
       body: code
     });
 
-    if (!response.ok) throw new Error(\`Server returned \${response.status}\`);
+    if (!response.ok) throw new Error(`Server returned ${response.status}`);
     
     const data = await response.json();
     if (data.success && data.url) {
@@ -645,7 +645,7 @@ function injectMagicEditStyles() {
   if (!iframeDoc.getElementById('magic-edit-styles')) {
     const style = iframeDoc.createElement('style');
     style.id = 'magic-edit-styles';
-    style.innerHTML = \`
+    style.innerHTML = `
       .magic-edit-hover {
         outline: 2px dashed #ec4899 !important;
         outline-offset: 2px !important;
@@ -653,7 +653,7 @@ function injectMagicEditStyles() {
         box-shadow: 0 0 10px rgba(236, 72, 153, 0.4) !important;
         transition: outline 0.1s !important;
       }
-    \`;
+    `;
     iframeDoc.head.appendChild(style);
   }
 }
