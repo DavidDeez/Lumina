@@ -135,12 +135,12 @@ function extractCleanHTML(rawCode) {
   cleaned = cleaned.replace(/<think>[\s\S]*?<\/think>\n*/gi, '');
   
   // 2. Extract HTML markdown block if present (use the LAST block if multiple)
-  const blocks = [...cleaned.matchAll(/```(?:html|xml)?\s*([\s\S]*?)```/gi)];
+  const blocks = [...cleaned.matchAll(/\`\`\`(?:html|xml)?\s*([\s\S]*?)\`\`\`/gi)];
   if (blocks.length > 0) {
     cleaned = blocks[blocks.length - 1][1];
   } else {
     // 3. Otherwise, strip all backticks
-    cleaned = cleaned.replace(/```(?:html)?|```/gi, '');
+    cleaned = cleaned.replace(/\`\`\`(?:html)?|\`\`\`/gi, '');
   }
   
   // 4. ALWAYS strip any leading conversational text before the first HTML tag
@@ -544,7 +544,7 @@ async function exportCode(framework) {
       body: JSON.stringify({
         model: 'accounts/fireworks/models/deepseek-v4-pro',
         messages: [
-          { role: 'system', content: `You are an expert developer. Convert the provided HTML/Tailwind into a complete, valid ${framework} component. Do not use markdown blocks like ```jsx. Output ONLY raw code.` },
+          { role: 'system', content: `You are an expert developer. Convert the provided HTML/Tailwind into a complete, valid ${framework} component. Do not use markdown blocks like \`\`\`jsx. Output ONLY raw code.` },
           { role: 'user', content: currentCode }
         ],
         temperature: 0.1,
@@ -726,9 +726,9 @@ btnSubmitMagic.addEventListener('click', async () => {
   const selectedModel = document.getElementById('model-select').value;
   
   const prompt = `You are an expert UI developer. I have the following HTML element:
-\\`\\`\\`html
+```html
 \${originalHTML}
-\\`\\`\\`
+```
 The user wants to apply the following change to it: "\${instruction}"
 Return ONLY the updated HTML for this element, retaining any Tailwind classes it needs, and without markdown backticks. Do NOT return the entire page.`;
 
@@ -737,7 +737,7 @@ Return ONLY the updated HTML for this element, retaining any Tailwind classes it
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer \${apiKey}`
+        'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
         model: selectedModel,
